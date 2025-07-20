@@ -1,42 +1,50 @@
-// Importamos el modelo de Mongoose que representa la colección de mensajes tipo chat
 const ChatbotMovil = require('../../../Data/model/ChatMovil');
 
 const mensajesResolver = {
-  // Sección de consultas (queries)
   Query: {
-    // Consulta para obtener todos los historiales de chat de un usuario específico
-    obtenerChatPorUsuario: async (_, { usuarioId }) => {
-      // Buscamos en la base de datos todos los registros con el ID del usuario proporcionado
-      const historial = await ChatbotMovil.find({ usuarioId });
-      // Devolvemos el historial encontrado
+    obtenerChatPorUsuario: async (_, {}, ctx) => {
+      // Verificar autenticación
+      if (!ctx.usuarios || !ctx.usuarios.id) {
+        throw new Error('No autorizado');
+      }
+      
+      // Obtener historial del usuario autenticado
+      const historial = await ChatbotMovil.find({ usuarioId: ctx.usuarios.id })
+        .sort({ fecha: -1 });
       return historial;
     }
   },
 
-  // Sección de mutaciones (modificaciones de datos)
   Mutation: {
-    // Mutación para guardar un nuevo historial de chat
     guardarMensajesChat: async (_, { input }, ctx) => {
       try {
-        // Verificamos que el usuario esté autenticado (viene del token decodificado en el contexto)
+        // Verificar autenticación
         if (!ctx.usuarios || !ctx.usuarios.id) {
           throw new Error('No autorizado');
         }
 
-        // Creamos un nuevo documento de historial de chat usando el modelo y los datos del input
-        const nuevoHistorial = new ChatbotMovil({
-          usuarioId: ctx.usuarios.id,      // Asignamos el ID del usuario autenticado
-          mensaje: input.mensaje           // Asignamos los mensajes recibidos en el input
+        // Buscar si ya existe un chat para este usuario
+        let chatExistente = await ChatbotMovil.findOne({ 
+          usuarioId: ctx.usuarios.id 
         });
 
-        // Guardamos el nuevo historial en la base de datos
-        const resultado = await nuevoHistorial.save();
+        if (chatExistente) {
+          // Si existe, agregar los nuevos mensajes al array existente
+          chatExistente.mensaje.push(...input.mensaje);
+          const resultado = await chatExistente.save();
+          return resultado;
+        } else {
+          // Si no existe, crear un nuevo documento
+          const nuevoHistorial = new ChatbotMovil({
+            usuarioId: ctx.usuarios.id,
+            mensaje: input.mensaje
+          });
 
-        // Retornamos el historial guardado como respuesta de la mutación
-        return resultado;
+          const resultado = await nuevoHistorial.save();
+          return resultado;
+        }
 
       } catch (error) {
-        // Si ocurre algún error, lo mostramos en consola y lanzamos un mensaje más genérico
         console.error("Error al guardar chat:", error);
         throw new Error("No se pudo guardar el chat");
       }
@@ -44,5 +52,4 @@ const mensajesResolver = {
   }
 };
 
-// Exportamos los resolvers para que puedan ser usados por el servidor Apollo
 module.exports = mensajesResolver;
