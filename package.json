@@ -4,9 +4,7 @@
   "description": "Todos los equipos vana a contruir rutas y logica para sus respectivas partes",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-  "test:watch": "jest --watch",
-  "test:coverage": "jest --coverage",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node --watch src/app.js"
   },
   "keywords": [],
@@ -22,11 +20,5 @@
     "graphql": "^16.10.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1"
-  },
-  "devDependencies": {
-    "@types/jest": "^30.0.0",
-    "jest": "^30.0.4",
-    "mongodb-memory-server": "^10.1.4",
-    "supertest": "^7.1.3"
   }
 }
